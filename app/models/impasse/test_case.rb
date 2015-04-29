@@ -1,7 +1,7 @@
 module Impasse
   class TestCase < ActiveRecord::Base
     unloadable
-    set_table_name "impasse_test_cases"
+    self.table_name = "impasse_test_cases"
     self.include_root_in_json = false
     
     has_many :test_steps, :dependent=>:destroy
@@ -16,7 +16,7 @@ module Impasse
     def project
       root_id = node.path.split(/\./)[1].to_i
       root = Impasse::Node.find(root_id)
-      Project.find_by_identifier(root.name)
+      Project.find_by(:identifier => root.name)
     end
 
     if Rails::VERSION::MAJOR < 3 or (Rails::VERSION::MAJOR == 3 and Rails::VERSION::MINOR < 1)

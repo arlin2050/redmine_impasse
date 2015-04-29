@@ -21,7 +21,7 @@ namespace :redmine do
       project = ENV['project'].to_s.strip
       project = nil if project == '' || project == '*'
 
-      root = Impasse::Node.find_by_name_and_node_type_id(project, 1)
+      root = Impasse::Node.find_by(:name => project, :node_type_id => 1)
       nodes = Impasse::Node.find_children(root.id)
       nodes.unshift(root)
 

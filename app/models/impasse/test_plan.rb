@@ -1,7 +1,7 @@
 module Impasse
   class TestPlan < ActiveRecord::Base
     unloadable
-    set_table_name "impasse_test_plans"
+    self.table_name = "impasse_test_plans"
     self.include_root_in_json = false
 
     has_many :test_plan_cases
@@ -23,18 +23,18 @@ module Impasse
 
       test_plans_by_version = {}
       versions.each do |version|
-        test_plans = TestPlan.find(:all, :conditions => ["version_id=?", version.id])
+        test_plans = TestPlan.where(:conditions => ["version_id=?", version.id]).all
         test_plans_by_version[version] = test_plans
       end
       [test_plans_by_version, versions]
     end
 
     def setting
-      @setting = Impasse::Setting.find_by_project_id(version.project.id)
+      @setting = Impasse::Setting.find_by(:project_id => version.project.id)
     end
 
     def related_requirements
-      Impasse::RequirementStats.find_by_sql([<<-END_OF_SQL, id, version.id, setting.requirement_tracker.map{|t| t.to_i}])
+      Impasse::RequirementStats.find_by(:sql => [<<-END_OF_SQL, id, version.id, setting.requirement_tracker.map{|t| t.to_i}])
 SELECT issues.id AS issue_id, issues.subject, r.needed, r.actual, r.planned
 FROM issues
 LEFT OUTER JOIN (

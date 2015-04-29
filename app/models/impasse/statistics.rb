@@ -1,7 +1,7 @@
 module Impasse
   class Statistics < ActiveRecord::Base
     unloadable
-    set_table_name 'impasse_test_plans'
+    self.table_name = 'impasse_test_plans'
     self.include_root_in_json = false
 
     def self.summary_default(test_plan_id, test_suite_id=nil)
@@ -68,7 +68,7 @@ module Impasse
       <%- end -%>
       END_OF_SQL
 
-      results = find_by_sql([ERB.new(sql, nil, '-').result(binding), conditions])
+      results = find_by(:sql => [ERB.new(sql, nil, '-').result(binding), conditions])
       tc_summary = nil
 
       results.delete_if{|r|
@@ -110,7 +110,7 @@ GROUP BY tester_id
 LEFT OUTER JOIN users
   ON users.id = stat.tester_id
       END_OF_SQL
-      find_by_sql([sql, test_plan_id])
+      find_by(:sql => [sql, test_plan_id])
     end
 
     def self.summary_daily(test_plan_id, test_suite_id=nil)
@@ -128,7 +128,7 @@ LEFT OUTER JOIN impasse_executions AS exe
 WHERE tpc.test_plan_id=?
 GROUP BY execution_date
       END_OF_SQL
-      statistics = find_by_sql([sql, test_plan_id])
+      statistics = find_by(:sql => [sql, test_plan_id])
 
       expected_sql = <<-END_OF_SQL
       SELECT  expected_date, count(*) AS total
@@ -140,7 +140,7 @@ GROUP BY execution_date
       WHERE tpc.test_plan_id = :test_plan_id
       GROUP BY expected_date
       END_OF_SQL
-      expected_statistics = find_by_sql([expected_sql, {:test_plan_id => test_plan_id}])
+      expected_statistics = find_by(:sql => [expected_sql, {:test_plan_id => test_plan_id}])
 
       res = [[], [], []]
       sum = { :remain => 0, :expected => 0, :bug => 0}

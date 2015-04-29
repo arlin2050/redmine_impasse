@@ -1,8 +1,10 @@
 module Impasse
   class Node < ActiveRecord::Base
     unloadable
-    set_table_name "impasse_nodes"
+    self.table_name = "impasse_nodes"
     self.include_root_in_json = false
+
+    attr_accessible :name, :node_type_id, :node_order
 
     belongs_to :parent, :class_name=>'Node', :foreign_key=> :parent_id
     has_many   :children, :class_name=> 'Node', :foreign_key=> :parent_id
@@ -19,7 +21,7 @@ module Impasse
 
     def self.find_with_children(id)
       node = self.find(id)
-      self.find_by_sql([ <<-END_OF_SQL, "#{node.path}%"])
+      self.find_by(:sql => [ <<-END_OF_SQL, "#{node.path}%"])
         SELECT distinct parent.*, LENGTH(parent.path) - LENGTH(REPLACE(parent.path,'.','')) - 2 AS level
           FROM impasse_nodes AS parent
           JOIN impasse_nodes AS child
@@ -121,7 +123,7 @@ module Impasse
         conditions[:filters_inactive] = true
       end
 
-      find_by_sql([ERB.new(sql, nil, '-').result(binding), conditions])
+      find_by(:sql => [ERB.new(sql, nil, '-').result(binding), conditions])
     end
 
     def self.find_planned(node_id, test_plan_id=nil, filters={}, limit=300)
@@ -203,7 +205,7 @@ ORDER BY level, T.node_order
         conditions[:expected_date_op] = filters[:expected_date_op] || '='
       end
 
-      nodes = self.find_by_sql([ERB.new(sql, nil, '-').result(binding), conditions])
+      nodes = self.find_by(:sql => [ERB.new(sql, nil, '-').result(binding), conditions])
       if nodes.size > 0 and nodes[0].node_type_id == 1
         test_plan = Impasse::TestPlan.find(test_plan_id)
         nodes[0].name = test_plan.name
@@ -223,7 +225,7 @@ ORDER BY level, T.node_order
         AND parent.node_type_id=3
       END_OF_SQL
       conditions = {:path => "#{self.path}%"}
-      Node.find_by_sql([ERB.new(sql).result(binding), conditions])
+      Node.find_by(:sql => [ERB.new(sql).result(binding), conditions])
     end
 
     def all_decendant_cases_with_plan
@@ -239,7 +241,7 @@ ORDER BY level, T.node_order
       ORDER BY level DESC
       END_OF_SQL
       conditions = {:path => "#{self.path}%"}
-      Node.find_by_sql([ERB.new(sql).result(binding), conditions])
+      Node.find_by(:sql => [ERB.new(sql).result(binding), conditions])
     end
 
     def save!
@@ -265,9 +267,7 @@ ORDER BY level, T.node_order
     end
 
     def update_siblings_order!
-      siblings = Node.find(:all,
-                           :conditions=>["parent_id=? and id != ?", self.parent_id, self.id],
-                           :order=>:node_order)
+      siblings = Node.where(:conditions=>["parent_id=? and id != ?", self.parent_id, self.id]).order(:node_order).all
       if self.node_order < siblings.size
         siblings.insert(self.node_order, self)
       else

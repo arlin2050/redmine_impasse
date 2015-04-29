@@ -15,12 +15,12 @@ class ImpasseTestCaseController < ImpasseAbstractController
       @allowed_projects = Issue.allowed_target_projects_on_move
       @allowed_projects.delete_if{|project| @project.id == project.id }
     end
-    @setting = Impasse::Setting.find_by_project_id(@project) || Impasse::Setting.create(:project_id => @project.id)
+    @setting = Impasse::Setting.find_by(:project_id => @project) || Impasse::Setting.create(:project_id => @project.id)
   end
 
   def list
     if params[:node_id].to_i == -1
-      root = Impasse::Node.find_by_name_and_node_type_id(@project.identifier, 1)
+      root = Impasse::Node.find_by(:name => @project.identifier, :node_type_id => 1)
       @nodes = Impasse::Node.find_children(root.id, params[:test_plan_id], params[:filters])
       root.name = get_root_name(params[:test_plan_id])
       @nodes.unshift(root)
@@ -34,14 +34,14 @@ class ImpasseTestCaseController < ImpasseAbstractController
   
   def show
     @node, @test_case = get_node(params[:node])
-    @setting = Impasse::Setting.find_by_project_id(@project) || Impasse::Setting.create(:project_id => @project.id)
+    @setting = Impasse::Setting.find_by(:project_id => @project) || Impasse::Setting.create(:project_id => @project.id)
 
     render :partial => 'show'
   end
 
   def new
     new_node
-    @setting = Impasse::Setting.find_by_project_id(@project) || Impasse::Setting.create(:project_id => @project.id)
+    @setting = Impasse::Setting.find_by(:project_id => @project) || Impasse::Setting.create(:project_id => @project.id)
 
     if request.post? or request.put?
       begin
@@ -105,7 +105,7 @@ class ImpasseTestCaseController < ImpasseAbstractController
   def edit
     @node, @test_case = get_node(params[:node])
     @test_case.attributes = params[:test_case]
-    @setting = Impasse::Setting.find_by_project_id(@project) || Impasse::Setting.create(:project_id => @project.id)
+    @setting = Impasse::Setting.find_by(:project_id => @project) || Impasse::Setting.create(:project_id => @project.id)
 
     if request.post? or request.put?
       begin
@@ -174,7 +174,7 @@ class ImpasseTestCaseController < ImpasseAbstractController
   end
 
   def keywords
-    keywords = Impasse::Keyword.find_all_by_project_id(@project).map{|r| r.keyword}
+    keywords = Impasse::Keyword.where(:project_id => @project).all.map{|r| r.keyword}
     render :json => keywords
   end
 
@@ -218,7 +218,7 @@ class ImpasseTestCaseController < ImpasseAbstractController
           ActiveRecord::Base.transaction do
             new_node = node.dup
             if new_node.node_type_id == 1
-              root = Impasse::Node.find_by_name_and_node_type_id(dest_project.identifier, 1)
+              root = Impasse::Node.find_by(:name => dest_project.identifier, :node_type_id => 1)
               if root
                 new_node = root
                 # TODO get max node order
@@ -311,7 +311,7 @@ class ImpasseTestCaseController < ImpasseAbstractController
   def find_project
     begin
       @project = Project.find(params[:project_id])
-      @project_node = Impasse::Node.find(:first, :conditions=>["name=? and node_type_id=?", @project.identifier, 1])
+      @project_node = Impasse::Node.where(:name => @project.identifier, :node_type_id => 1).first
       if @project_node.nil?
         @project_node = Impasse::Node.new(:name=>@project.identifier, :node_type_id=>1, :node_order=>1)
         @project_node.save
